@@ -7,4 +7,5 @@ compatibility_flags = ["nodejs_compat"]
 port = 8787
 
 [vars]
+DATABASE_URL = "postgresql://neondb_owner:npg_eazT5X9WLjRv@ep-steep-poetry-add97482-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 JWT_SECRET = "super-secret-key-change-in-production"
