@@ -50,8 +50,9 @@ jobs:
         run: pnpm turbo test --filter='[HEAD^1]' 
 
       - name: Deploy affected Workers
-        # Only deploy on push to main and only for changed services
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Pass the filter correctly to catch only services [cite: 174, 180]
         run: pnpm turbo deploy --filter='[HEAD^1]' --filter='./services/*'
         env:
+          # This MUST match the name in your turbo.json 'env' array 
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
