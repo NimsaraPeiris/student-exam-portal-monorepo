@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const { Title, Text } = Typography;
 
@@ -23,10 +24,19 @@ export default function LoginPage() {
     const router = useRouter();
     const setAuth = useAuthStore((state) => state.setAuth);
     const { message } = App.useApp();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
         resolver: zodResolver(loginSchema),
     });
+
+    if (!mounted) {
+        return null;
+    }
 
     const onSubmit = async (data: LoginForm) => {
         try {

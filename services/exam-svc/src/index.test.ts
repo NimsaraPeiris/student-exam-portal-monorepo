@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import app from './index';
 
-// Mock postgres and drizzle
-vi.mock('postgres', () => ({
-    default: vi.fn(() => ({}))
+// Mock neon and drizzle
+vi.mock('@neondatabase/serverless', () => ({
+    neon: vi.fn(() => ({
+        // some client mock
+    }))
 }));
 
 const mockDb = {
@@ -14,9 +16,10 @@ const mockDb = {
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockReturnThis(),
     returning: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockReturnThis(),
 };
 
-vi.mock('drizzle-orm/postgres-js', () => ({
+vi.mock('drizzle-orm/neon-http', () => ({
     drizzle: vi.fn(() => mockDb)
 }));
 
@@ -32,7 +35,7 @@ describe('Exam Service integration tests', () => {
             method: 'POST',
             body: JSON.stringify({ paper_id: 'paper-1', user_id: 'user-1' }),
             headers: { 'Content-Type': 'application/json' }
-        }, { DATABASE_URL: 'postgres://localhost' });
+        }, { DATABASE_URL: 'postgresql://user:pass@localhost/db' });
 
         expect(res.status).toBe(201);
         const data = await res.json() as { session_id: string };
@@ -51,7 +54,7 @@ describe('Exam Service integration tests', () => {
             method: 'POST',
             body: JSON.stringify({ question_id: 'q-1', selected_option_id: 'opt-1' }),
             headers: { 'Content-Type': 'application/json' }
-        }, { DATABASE_URL: 'postgres://localhost' });
+        }, { DATABASE_URL: 'postgresql://user:pass@localhost/db' });
 
         expect(res.status).toBe(200);
         const data = await res.json() as { is_correct: boolean };

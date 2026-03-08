@@ -43,45 +43,65 @@ app.all('/auth/*', async (c) => {
 
 // --- 2. Authentication Middleware ---
 // Any request starting with /papers or /exams MUST have a valid JWT
-app.use('/papers/*', (c, next) => {
+app.use('/papers*', (c, next) => {
     return jwt({ secret: c.env.JWT_SECRET, alg: 'HS256' })(c, next);
 });
 
-app.use('/exams/*', (c, next) => {
+app.use('/exams*', (c, next) => {
     return jwt({ secret: c.env.JWT_SECRET, alg: 'HS256' })(c, next);
 });
 
 // --- 3. Protected Forwarding Logic ---
 
 // Forward to Papers Service
-app.all('/papers/*', async (c) => {
+app.all('/papers*', async (c) => {
     const url = new URL(c.req.url);
     const targetUrl = `${c.env.PAPERS_SVC_URL}${url.pathname}${url.search}`;
 
+    console.log(`[Gateway] Routing Papers request to: ${targetUrl}`);
     const payload = c.get('jwtPayload');
-    const newRequest = new Request(c.req.raw);
 
+    // We need to create a new Request to modify headers, or just pass headers
+    const headers = new Headers(c.req.header());
     if (payload && payload.id) {
-        newRequest.headers.set('X-User-Id', payload.id.toString());
+        headers.set('X-User-Id', payload.id.toString());
+        console.log(`[Gateway] Authenticated User ID: ${payload.id}`);
+    } else {
+        console.log(`[Gateway] Anonymous request (Public)`);
     }
 
-    return fetch(targetUrl, newRequest);
+    try {
+        const response = await fetch(targetUrl, {
+            method: c.req.method,
+            headers: headers,
+            body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined,
+        });
+        console.log(`[Gateway] Service response status: ${response.status}`);
+        return response;
+    } catch (e: any) {
+        console.error(`[Gateway] Fetch Error:`, e.message);
+        return c.json({ error: 'Upstream service unavailable' }, 502);
+    }
 });
 
 // Forward to Exam Service
-app.all('/exams/*', async (c) => {
+app.all('/exams*', async (c) => {
     const url = new URL(c.req.url);
     const targetUrl = `${c.env.EXAM_SVC_URL}${url.pathname}${url.search}`;
 
     // Requirement: Pass the user ID from the JWT to the internal service
     const payload = c.get('jwtPayload');
-    const newRequest = new Request(c.req.raw);
 
+    const headers = new Headers(c.req.header());
     if (payload && payload.id) {
-        newRequest.headers.set('X-User-Id', payload.id.toString());
+        headers.set('X-User-Id', payload.id.toString());
     }
 
-    return fetch(targetUrl, newRequest);
+    return fetch(targetUrl, {
+        method: c.req.method,
+        headers: headers,
+        body: c.req.method !== 'GET' && c.req.method !== 'HEAD' ? await c.req.arrayBuffer() : undefined,
+    });
 });
 
 export default app;

@@ -2,6 +2,9 @@ name = "api-gateway"
 main = "src/index.ts"
 compatibility_date = "2024-03-07"
 
+[dev]
+port = 8080
+
 [vars]
 JWT_SECRET = "super-secret-key-change-in-production"
 AUTH_SVC_URL = "http://localhost:8787"

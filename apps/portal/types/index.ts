@@ -37,3 +37,17 @@ export interface SubmissionResponse {
     total_questions: number;
     percentage: number;
 }
+
+export interface ExamHistory {
+    session_id: string;
+    started_at: string;
+    expires_at: string;
+    submitted_at: string;
+    score_pct: string;
+    status: string;
+    paper_id: string;
+    title: string;
+    subject: string;
+    exam_board: string;
+    year: number;
+}

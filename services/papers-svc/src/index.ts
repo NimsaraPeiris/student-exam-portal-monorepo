@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 import { eq, and, sql } from 'drizzle-orm';
 import { papers, questions, purchases } from '@assessment/db/src/schema';
 import { Env } from './types/env';
@@ -22,13 +22,22 @@ app.get('/papers', async (c) => {
   // Create a unique cache key based on the filters and pagination
   const cacheKey = `papers_list_${subject || 'all'}_${board || 'all'}_${type || 'all'}_${year || 'all'}_${language || 'all'}_p${page}_l${limit}`;
 
-  // Try to get from Cloudflare KV first
-  const cached = await c.env.PAPERS_CACHE.get(cacheKey);
-  if (cached) {
-    return c.json({ ...JSON.parse(cached), source: 'cache' });
-  }
+  console.log(`[PapersSvc] Fetching papers list. CacheKey: ${cacheKey}`);
 
-  const client = postgres(c.env.DATABASE_URL);
+  /* Temporarily bypassing cache for debug
+  try {
+    const cached = await c.env.PAPERS_CACHE.get(cacheKey);
+    if (cached) {
+      console.log(`[PapersSvc] Cache hit for ${cacheKey}`);
+      return c.json({ ...JSON.parse(cached), source: 'cache' });
+    }
+  } catch (kvError) {
+    console.error(`[PapersSvc] KV Cache Error:`, kvError);
+  }
+  */
+
+  console.log(`[PapersSvc] Cache miss. Fetching from DB...`);
+  const client = neon(c.env.DATABASE_URL);
   const db = drizzle(client);
 
   // Build dynamic query
@@ -39,23 +48,27 @@ app.get('/papers', async (c) => {
   if (year) filters.push(eq(papers.year, Number(year)));
   if (language) filters.push(eq(papers.language, language));
 
-  // 1. Get total count for pagination
-  const countResult = await db.select({ count: sql<number>`count(*)` })
-    .from(papers)
-    .where(filters.length > 0 ? and(...filters) : undefined);
+  try {
+    console.log(`[PapersSvc] Executing count query...`);
+    // 1. Get total count for pagination
+    const countResult = await db.select({ count: sql`count(*)` })
+      .from(papers)
+      .where(filters.length > 0 ? and(...filters) : undefined);
 
-  const total = Number(countResult[0]?.count || 0);
+    const total = Number((countResult[0] as any)?.count || 0);
+    console.log(`[PapersSvc] Total count: ${total}`);
 
-  // 2. Get paginated results with purchase status
-  const userId = c.req.header('X-User-Id');
 
-  // We use a LEFT JOIN to check if the paper is purchased by the current user
-  const result = await db.execute(sql`
+    // 2. Get paginated results with purchase status
+    const userId = c.req.header('X-User-Id');
+
+    console.log(`[PapersSvc] Executing papers query...`);
+    const response = await db.execute(sql`
     SELECT 
       p.*,
       EXISTS (
         SELECT 1 FROM ${purchases} pu 
-        WHERE pu.paper_id = p.id AND pu.user_id = ${userId || null}
+        WHERE pu.paper_id = p.id AND pu.user_id = ${userId || 'guest'}
       ) as is_purchased
     FROM ${papers} p
     WHERE ${filters.length > 0 ? and(...filters) : sql`TRUE`}
@@ -63,21 +76,33 @@ app.get('/papers', async (c) => {
     OFFSET ${offset}
   `);
 
-  const responseData = {
-    data: result.map(p => ({
-      ...p,
-      price_lkr: Number(p.price_lkr) // Ensure numeric
-    })),
-    total,
-    page,
-    limit,
-    source: 'database'
-  };
+    const result = (response as any).rows || response;
+    console.log(`[PapersSvc] Query returned ${result.length} papers (from rows).`);
+    console.log(`Sample Result:`, result[0]);
 
-  // Store in KV for 5 minutes (300 seconds)
-  await c.env.PAPERS_CACHE.put(cacheKey, JSON.stringify(responseData), { expirationTtl: 300 });
+    const responseData = {
+      data: result.map((p: any) => ({
+        ...p,
+        price_lkr: Number(p.price_lkr) // Ensure numeric
+      })),
+      total,
+      page,
+      limit,
+      source: 'database'
+    };
 
-  return c.json(responseData);
+    // Store in KV for 5 minutes (300 seconds)
+    try {
+      await c.env.PAPERS_CACHE.put(cacheKey, JSON.stringify(responseData), { expirationTtl: 300 });
+    } catch (kvError) {
+      console.error(`[PapersSvc] KV Cache Save Error:`, kvError);
+    }
+
+    return c.json(responseData);
+  } catch (error) {
+    console.error(`[PapersSvc] DB Error:`, error);
+    return c.json({ error: 'Failed to fetch papers' }, 500);
+  }
 });
 
 // --- 4. GET /papers/purchased ---
@@ -85,11 +110,11 @@ app.get('/papers/purchased', async (c) => {
   const userId = c.req.header('X-User-Id');
   if (!userId) return c.json({ error: 'Unauthorized' }, 401);
 
-  const client = postgres(c.env.DATABASE_URL);
+  const client = neon(c.env.DATABASE_URL);
   const db = drizzle(client);
 
   try {
-    const result = await db.execute(sql`
+    const response = await db.execute(sql`
             SELECT 
                 p.*,
                 TRUE as is_purchased
@@ -98,9 +123,10 @@ app.get('/papers/purchased', async (c) => {
             WHERE pu.user_id = ${userId}
             ORDER BY pu.purchased_at DESC
         `);
+    const result = (response as any).rows || response;
 
     return c.json({
-      data: result.map(p => ({
+      data: result.map((p: any) => ({
         ...p,
         price_lkr: Number(p.price_lkr)
       }))
@@ -117,7 +143,7 @@ app.post('/papers/:id/purchase', async (c) => {
 
   if (!userId) return c.json({ error: 'Unauthorized' }, 401);
 
-  const client = postgres(c.env.DATABASE_URL);
+  const client = neon(c.env.DATABASE_URL);
   const db = drizzle(client);
 
   try {
@@ -151,12 +177,12 @@ app.get('/papers/search', async (c) => {
   const q = c.req.query('q');
   if (!q) return c.json({ data: [], total: 0 });
 
-  const client = postgres(c.env.DATABASE_URL);
+  const client = neon(c.env.DATABASE_URL);
   const db = drizzle(client);
 
   // Requirement: tsvector across title, subject, and topic tags.
   // We use a subquery to aggregate topic tags for each paper.
-  const result = await db.execute(sql`
+  const response = await db.execute(sql`
     WITH paper_topics AS (
       SELECT paper_id, string_agg(DISTINCT topic_tag, ' ') as tags
       FROM ${questions}
@@ -170,6 +196,7 @@ app.get('/papers/search', async (c) => {
       @@ plainto_tsquery('english', ${q})
     LIMIT 20
   `);
+  const result = (response as any).rows || response;
 
   return c.json({
     data: result,
@@ -183,7 +210,7 @@ app.get('/papers/:id/questions', async (c) => {
   const paperId = c.req.param('id');
   const userId = c.req.header('X-User-Id');
 
-  const client = postgres(c.env.DATABASE_URL);
+  const client = neon(c.env.DATABASE_URL);
   const db = drizzle(client);
 
   // Check if paper is purchased
@@ -217,7 +244,17 @@ app.get('/papers/:id/questions', async (c) => {
   }
 
   return c.json({
-    questions: result,
+    questions: result.map(q => ({
+      id: q.id,
+      order: q.order,
+      content: q.text,
+      choices: (q.options as any[]).map((opt: any) => ({
+        id: opt.id,
+        content: opt.text || opt.content
+      })),
+      difficulty: q.difficulty,
+      topic: q.topic
+    })),
     is_preview: !isPurchased,
     total_count: result.length // This might be misleading if we want the actual total count
   });

@@ -120,6 +120,8 @@ export default function PapersPage() {
                         >
                             <Option value="all">All Subjects</Option>
                             <Option value="Mathematics">Mathematics</Option>
+                            <Option value="Physics">Physics</Option>
+                            <Option value="Chemistry">Chemistry</Option>
                             <Option value="Science">Science</Option>
                             <Option value="English">English</Option>
                         </Select>

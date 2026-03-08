@@ -8,6 +8,7 @@ import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const { Title, Text } = Typography;
 
@@ -26,10 +27,19 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
     const router = useRouter();
     const { message } = App.useApp();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
     });
+
+    if (!mounted) {
+        return null; // Prevent hydration mismatch by not rendering on server/initial mount
+    }
 
     const onSubmit = async (data: RegisterForm) => {
         try {

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import app from './index';
 
-// Mock postgres and drizzle
-vi.mock('postgres', () => ({
-    default: vi.fn(() => ({
+// Mock neon and drizzle
+vi.mock('@neondatabase/serverless', () => ({
+    neon: vi.fn(() => ({
         // some client mock
     }))
 }));
@@ -18,7 +18,7 @@ const mockDb = {
     then: (resolve: any) => resolve([]), // simple thenable mock
 };
 
-vi.mock('drizzle-orm/postgres-js', () => ({
+vi.mock('drizzle-orm/neon-http', () => ({
     drizzle: vi.fn(() => mockDb)
 }));
 
@@ -38,7 +38,14 @@ describe('Papers Service integration tests', () => {
         });
 
         // Mock questions fetch (return 10 questions)
-        const manyQuestions = Array.from({ length: 10 }, (_, i) => ({ id: i.toString() }));
+        const manyQuestions = Array.from({ length: 10 }, (_, i) => ({
+            id: i.toString(),
+            order: i,
+            text: `Question ${i}`,
+            options: [{ id: 'a', text: 'Option A' }, { id: 'b', text: 'Option B' }],
+            difficulty: 'Easy',
+            topic: 'General'
+        }));
         mockDb.select.mockReturnValueOnce({
             from: () => ({
                 where: () => ({
@@ -49,7 +56,7 @@ describe('Papers Service integration tests', () => {
 
         const res = await app.request('/papers/paper-1/questions', {
             headers: { 'X-User-Id': 'user-1' }
-        }, { DATABASE_URL: 'postgres://localhost' });
+        }, { DATABASE_URL: 'postgresql://user:pass@localhost/db' });
 
         expect(res.status).toBe(200);
         const data = await res.json() as { questions: any[], is_preview: boolean };
@@ -68,7 +75,14 @@ describe('Papers Service integration tests', () => {
         });
 
         // Mock questions fetch (return 10 questions)
-        const manyQuestions = Array.from({ length: 10 }, (_, i) => ({ id: i.toString() }));
+        const manyQuestions = Array.from({ length: 10 }, (_, i) => ({
+            id: i.toString(),
+            order: i,
+            text: `Question ${i}`,
+            options: [{ id: 'a', text: 'Option A' }, { id: 'b', text: 'Option B' }],
+            difficulty: 'Easy',
+            topic: 'General'
+        }));
         mockDb.select.mockReturnValueOnce({
             from: () => ({
                 where: () => ({
@@ -79,7 +93,7 @@ describe('Papers Service integration tests', () => {
 
         const res = await app.request('/papers/paper-1/questions', {
             headers: { 'X-User-Id': 'user-1' }
-        }, { DATABASE_URL: 'postgres://localhost' });
+        }, { DATABASE_URL: 'postgresql://user:pass@localhost/db' });
 
         expect(res.status).toBe(200);
         const data = await res.json() as { questions: any[], is_preview: boolean };

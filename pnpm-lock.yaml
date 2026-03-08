@@ -69,6 +69,9 @@ importers:
       axios:
         specifier: ^1.13.6
         version: 1.13.6
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.29.0)(@playwright/test@1.58.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4)
@@ -117,6 +120,10 @@ importers:
         version: 5.9.3
 
   packages/db:
+    dependencies:
+      '@neondatabase/serverless':
+        specifier: ^1.0.2
+        version: 1.0.2
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20260307.1
@@ -137,7 +144,7 @@ importers:
         specifier: ^3.4.4
         version: 3.4.8
       tsx:
-        specifier: ^4.16.2
+        specifier: ^4.21.0
         version: 4.21.0
 
   packages/types: {}
@@ -191,6 +198,9 @@ importers:
       '@assessment/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@neondatabase/serverless':
+        specifier: ^1.0.2
+        version: 1.0.2
       drizzle-orm:
         specifier: 0.44.7
         version: 0.44.7(@cloudflare/workers-types@4.20260307.1)(@neondatabase/serverless@1.0.2)(@types/pg@8.18.0)(pg@8.16.3)(postgres@3.4.8)
@@ -213,6 +223,9 @@ importers:
       '@assessment/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@neondatabase/serverless':
+        specifier: ^1.0.2
+        version: 1.0.2
       drizzle-orm:
         specifier: 0.44.7
         version: 0.44.7(@cloudflare/workers-types@4.20260307.1)(@neondatabase/serverless@1.0.2)(@types/pg@8.18.0)(pg@8.16.3)(postgres@3.4.8)

@@ -1,31 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import app from './index';
 
-// Mock postgres and drizzle
-vi.mock('postgres', () => {
-    return {
-        default: vi.fn(() => ({
-            // mock the client if needed
-        }))
-    };
-});
+// Mock neon and drizzle
+vi.mock('@neondatabase/serverless', () => ({
+    neon: vi.fn(() => ({
+        // some client mock
+    }))
+}));
 
-vi.mock('drizzle-orm/postgres-js', () => {
-    return {
-        drizzle: vi.fn(() => ({
-            select: vi.fn(() => ({
-                from: vi.fn(() => ({
-                    where: vi.fn(() => ({
-                        limit: vi.fn(() => [])
-                    }))
+vi.mock('drizzle-orm/neon-http', () => ({
+    drizzle: vi.fn(() => ({
+        select: vi.fn(() => ({
+            from: vi.fn(() => ({
+                where: vi.fn(() => ({
+                    limit: vi.fn(() => [])
                 }))
-            })),
-            insert: vi.fn(() => ({
-                values: vi.fn(() => Promise.resolve())
             }))
+        })),
+        insert: vi.fn(() => ({
+            values: vi.fn(() => Promise.resolve())
         }))
-    };
-});
+    }))
+}));
 
 describe('Auth Service integration tests', () => {
     it('GET / should return "Auth Service is running!"', async () => {

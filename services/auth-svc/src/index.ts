@@ -3,8 +3,8 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { sign } from 'hono/jwt';
 import { setCookie } from 'hono/cookie';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 import { eq } from 'drizzle-orm';
 import { users } from '@assessment/db/src/schema';
 import { Env } from './types/env';
@@ -32,31 +32,40 @@ app.post('/auth/register', async (c) => {
     try {
         const body = await c.req.json();
         const { email, password, full_name } = registerSchema.parse(body);
+        console.log(`Attempting to register user: ${email}`);
 
-        const client = postgres(c.env.DATABASE_URL);
+        const client = neon(c.env.DATABASE_URL);
         const db = drizzle(client);
 
+        console.log('Checking for existing user...');
         // 1. Check if user already exists
         const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        console.log('Existing user check completed.');
+
         if (existingUser.length > 0) {
             return c.json({ error: 'User already exists' }, 409);
         }
 
-        // 2. Hash password (using 12 rounds as recommended)
-        const password_hash = await bcrypt.hash(password, 12);
+        console.log('Hashing password...');
+        // 2. Hash password (using 10 rounds for speed in development if needed, 12 is hefty for JS)
+        const password_hash = await bcrypt.hash(password, 10);
+        console.log('Password hashed.');
 
+        console.log('Inserting user into database...');
         // 3. Create user
         await db.insert(users).values({
             email,
             password_hash,
             full_name,
         });
+        console.log('User inserted.');
 
         return c.json({ message: 'User registered successfully' }, 201);
 
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Registration error:', error);
         if (error instanceof z.ZodError) return c.json({ error: error.issues[0].message }, 400);
-        return c.json({ error: 'Internal Server Error' }, 500);
+        return c.json({ error: 'Internal Server Error', details: error.message }, 500);
     }
 });
 
@@ -67,7 +76,7 @@ app.post('/auth/login', async (c) => {
         const body = await c.req.json();
         const { email, password } = loginSchema.parse(body);
 
-        const client = postgres(c.env.DATABASE_URL);
+        const client = neon(c.env.DATABASE_URL);
         const db = drizzle(client);
 
         // 1. Find user
@@ -134,7 +143,7 @@ app.post('/auth/refresh', async (c) => {
             return c.json({ error: 'Invalid refresh token' }, 401);
         }
 
-        const client = postgres(c.env.DATABASE_URL);
+        const client = neon(c.env.DATABASE_URL);
         const db = drizzle(client);
 
         // Fetch user data
@@ -199,7 +208,7 @@ app.get('/auth/me', async (c) => {
             return c.json({ error: 'Invalid token' }, 401);
         }
 
-        const client = postgres(c.env.DATABASE_URL);
+        const client = neon(c.env.DATABASE_URL);
         const db = drizzle(client);
 
         const user = await db.select({
