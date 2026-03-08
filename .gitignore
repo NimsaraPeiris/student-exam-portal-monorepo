@@ -15,6 +15,10 @@ out
 .env.test.local
 .env.production.local
 
+# wrangler
+.wrangler
+.dev.vars
+
 # misc
 .DS_Store
 *.log
