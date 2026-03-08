@@ -60,3 +60,20 @@ This project is a monorepo powered by **Turborepo** and **pnpm workspaces**, str
 - **Portal URL**: `http://localhost:3000`
 - **Admin Dashboard**: `http://localhost:3000/admin` (within the admin app)
 - **API Gateway**: `http://localhost:8080` (routes to sub-services)
+
+## 🧪 Testing
+
+The project uses **Vitest** for unit and integration testing across the monorepo.
+
+### Run All Tests
+Parallelized execution across all apps and services via Turborepo:
+```bash
+pnpm test
+```
+
+### Advanced Testing Commands
+- **Watch Mode**: `npx vitest` (Run tests in interactive watch mode)
+- **UI Mode**: `npx vitest --ui` (Open a beautiful web-based test dashboard)
+- **Specific Package**: `pnpm --filter <package-name> test` (Run tests for a single service/app)
+
+Tests are configured as a workspace in the root `vitest.workspace.ts`, allowing for seamless cross-package testing while maintaining isolated environments (e.g., `jsdom` for frontend apps and `node` for microservices).
