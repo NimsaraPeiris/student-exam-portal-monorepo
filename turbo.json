@@ -1,14 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "dist/**"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "build"
+      ]
     },
     "deploy": {
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build"
+      ],
       "cache": false,
-      "env": ["CLOUDFLARE_API_TOKEN"] 
+      "env": [
+        "CLOUDFLARE_API_TOKEN"
+      ]
     }
   }
 }

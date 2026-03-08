@@ -51,7 +51,7 @@ jobs:
 
       - name: Deploy affected Workers
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        # Pass the filter correctly to catch only services [cite: 174, 180]
+        # Pass the filter correctly to catch only services
         run: pnpm turbo deploy --filter='[HEAD^1]' --filter='./services/*'
         env:
           # This MUST match the name in your turbo.json 'env' array 
