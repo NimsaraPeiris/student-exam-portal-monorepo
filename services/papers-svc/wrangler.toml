@@ -1,0 +1,14 @@
+name = "papers-svc"
+main = "src/index.ts"
+compatibility_date = "2024-03-07"
+compatibility_flags = ["nodejs_compat"]
+
+[dev]
+port = 8788
+
+[vars]
+DATABASE_URL = "postgresql://neondb_owner:npg_eazT5X9WLjRv@ep-steep-poetry-add97482-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+[[kv_namespaces]]
+binding = "PAPERS_CACHE"
+id = "2d68545e-4009-11ed-b878-0242ac120002"

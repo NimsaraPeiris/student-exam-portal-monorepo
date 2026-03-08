@@ -1,0 +1,11 @@
+name = "exam-svc"
+main = "src/index.ts"
+compatibility_date = "2024-03-07"
+compatibility_flags = ["nodejs_compat"]
+
+[dev]
+port = 8789
+
+[vars]
+DATABASE_URL = "postgresql://neondb_owner:npg_eazT5X9WLjRv@ep-steep-poetry-add97482-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+JWT_SECRET = "super-secret-key-change-in-production"

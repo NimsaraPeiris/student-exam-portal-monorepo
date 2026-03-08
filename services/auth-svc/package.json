@@ -1,0 +1,22 @@
+{
+  "name": "@assessment/auth-svc",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@assessment/db": "workspace:*",
+    "@neondatabase/serverless": "^1.0.2",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.12.5",
+    "postgres": "^3.4.8",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260307.1",
+    "wrangler": "^4.71.0"
+  }
+}

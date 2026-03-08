@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    [cite_start]branches: [main] # Trigger on push to main [cite: 168]
+  pull_request:
+    [cite_start]branches: [main] # Run tests on PRs, but skip deploy 
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          [cite_start]fetch-depth: 0 # Required for Turborepo to compare changes [cite: 172]
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          [cite_start]node-version: 20 # Requirement 10.A 
+
+      - name: Install pnpm 9
+        uses: pnpm/action-setup@v3
+        with:
+          [cite_start]version: 9 # Requirement 10.A 
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store- # Requirement 10.A 
+
+      - name: Install dependencies
+        [cite_start]run: pnpm install --frozen-lockfile # Requirement 10.A [cite: 171]
+
+      - name: Build affected packages
+        # Only build what changed since the last commit [cite: 172]
+        run: pnpm turbo build --filter='[HEAD^1]' 
+
+      - name: Run affected tests
+        # Fail the build if any test fails [cite: 173]
+        run: pnpm turbo test --filter='[HEAD^1]' 
+
+      - name: Deploy affected Workers
+        # Only deploy on push to main and only for changed services [cite: 174, 175]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: pnpm turbo deploy --filter='[HEAD^1]' --filter='./services/*'
+        env:
+          [cite_start]CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Requirement 10.A

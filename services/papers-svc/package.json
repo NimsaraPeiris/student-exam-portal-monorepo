@@ -1,0 +1,20 @@
+{
+  "name": "@assessment/papers-svc",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@assessment/db": "workspace:*",
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.12.5",
+    "postgres": "^3.4.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260307.1",
+    "wrangler": "^4.71.0"
+  }
+}
