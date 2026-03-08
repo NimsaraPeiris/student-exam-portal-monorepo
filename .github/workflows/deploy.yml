@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    [cite_start]branches: [main] # Trigger on push to main [cite: 168]
+    branches: [main] # Trigger on push to main
   pull_request:
-    [cite_start]branches: [main] # Run tests on PRs, but skip deploy 
+    branches: [main] # Run tests on PRs, but skip deploy 
 
 jobs:
   build-test-deploy:
@@ -13,17 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          [cite_start]fetch-depth: 0 # Required for Turborepo to compare changes [cite: 172]
+          fetch-depth: 0 # Required for Turborepo to compare changes
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          [cite_start]node-version: 20 # Requirement 10.A 
+          node-version: 20
 
       - name: Install pnpm 9
         uses: pnpm/action-setup@v3
         with:
-          [cite_start]version: 9 # Requirement 10.A 
+          version: 9
 
       - name: Get pnpm store directory
         shell: bash
@@ -36,22 +36,22 @@ jobs:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store- # Requirement 10.A 
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        [cite_start]run: pnpm install --frozen-lockfile # Requirement 10.A [cite: 171]
+        run: pnpm install --frozen-lockfile
 
       - name: Build affected packages
-        # Only build what changed since the last commit [cite: 172]
+        # Only build what changed since the last commit
         run: pnpm turbo build --filter='[HEAD^1]' 
 
       - name: Run affected tests
-        # Fail the build if any test fails [cite: 173]
+        # Fail the build if any test fails
         run: pnpm turbo test --filter='[HEAD^1]' 
 
       - name: Deploy affected Workers
-        # Only deploy on push to main and only for changed services [cite: 174, 175]
+        # Only deploy on push to main and only for changed services
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: pnpm turbo deploy --filter='[HEAD^1]' --filter='./services/*'
         env:
-          [cite_start]CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Requirement 10.A
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
