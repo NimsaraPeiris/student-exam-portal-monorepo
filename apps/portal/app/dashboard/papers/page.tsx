@@ -100,7 +100,6 @@ export default function PapersPage() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
             <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-                    <Title level={2} style={{ margin: 0 }}>Browse Exam Papers</Title>
 
                     <Search
                         placeholder="Search by title, subject or tags..."
